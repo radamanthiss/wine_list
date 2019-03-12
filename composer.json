@@ -1,0 +1,11 @@
+{
+	"name" : "greizzy/list_wine",
+	"description" : "list wine from rss feed with queue",
+	"type" : "project",
+	"minimum-stability" : "stable",
+	"require" : {
+		"php-amqplib/php-amqplib" : "^2.8",
+		"ext-sockets" : "*",
+		"monolog/monolog" : "~1.24"
+	}
+}
