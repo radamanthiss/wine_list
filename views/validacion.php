@@ -1,15 +1,16 @@
 <?php
 require_once '../vendor/autoload.php';
-
+include '../controllers/db_connect.php';
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-$usuario = "root";
-$contrasena = "1234";  // en mi caso tengo contraseña pero en casa caso introducidla aquí.
-$servidor = "localhost";
-$basededatos = "data_wine";
 
-$conn = new mysqli($servidor, $usuario, $contrasena,$basededatos);
+$conn = db_connect();
+
+$log = new Logger('validation');
+$log->pushHandler(new StreamHandler('C:/wamp64/www/list_wine/Log/data_'.date('Y-m-d').'.log', Logger::DEBUG));
 
 $title=($_POST["wines"]);
 $title_escape = mysqli_real_escape_string($conn, $title);
@@ -19,30 +20,44 @@ $datos = mysqli_fetch_array($res);
 
 $pubDate= $datos["pubDate"];
 
+$log->addDebug("TITLE_SELECT: $title, PUB_DATE: $pubDate");
 // inputs
-$host = 'rhino.rmq.cloudamqp.com';
-$user = 'gnyafmqg';
-$pass = 'OSg0J453sOqd0hqmCkIDbIgXB9hYLdli';
-$port = 5672;
-$exchange = "subscribers";
-$queue ='waiters';
-$vhost = 'gnyafmqg';
-$connection = new AMQPStreamConnection($host, $port, $user, $pass, $vhost);
-$channel = $connection->channel();
-$channel->queue_declare($queue, false, true, false, false);
-
-$channel->exchange_declare($exchange, 'direct', false, true, false);
-$channel->queue_bind($queue, $exchange);
-$messageBody = json_encode([
-    'title' => $title,
-    'pubDate' => $pubDate
-]);
-$message = new AMQPMessage($messageBody, [
-    'content_type' => 'application/json', 
-    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
-$channel->basic_publish($message, $exchange);
-$channel->close();
-$connection->close();
+try {
+    $host = 'rhino.rmq.cloudamqp.com';
+    $user = 'gnyafmqg';
+    $pass = 'OSg0J453sOqd0hqmCkIDbIgXB9hYLdli';
+    $port = 5672;
+    $exchange = "subscribers";
+    $queue ='waiters';
+    $vhost = 'gnyafmqg';
+    $connection = new AMQPStreamConnection($host, $port, $user, $pass, $vhost);
+    if(!$connection->isConnected()){
+        $log->addError("Connection_Failed");
+        die('Connection through channel failed!');
+    }
+    $channel = $connection->channel();
+    $channel->queue_declare($queue, false, true, false, false);
+    
+    $channel->exchange_declare($exchange, 'direct', false, true, false);
+    $channel->queue_bind($queue, $exchange);
+    $messageBody = json_encode([
+        'title' => $title,
+        'pubDate' => $pubDate
+    ]);
+    
+    $log->addDebug("Body_Sent: $messageBody");
+    $message = new AMQPMessage($messageBody, [
+        'content_type' => 'application/json',
+        'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
+    $channel->basic_publish($message, $exchange);
+    
+    $channel->close();
+    $connection->close();
+} catch (AMQPException $e) {
+    $error ="AMQP Exception - ".$e->getMessage();
+    $log->addError($error);
+}
+    
 
 
 ?>
