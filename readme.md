@@ -16,7 +16,8 @@ Put the project into route C:/wamp64/www/ and then we can access to differents r
 3. (http://localhost/list_wine/models/data_load.php) charge first time the RSS Feed
 4. (http://localhost/list_wine/models/update_wine.php) update the wine list every day
 5. (http://localhost/list_wine/views/index.php) principal view for application
-6. (http://localhost/list_wine/models/validacion.php) receive the paramaters from home and creat the RabbitMQ
+6. (http://localhost/list_wine/views/validacion.php) receive the paramaters from home and creat the RabbitMQ
+7. (http://localhost/list_wine/views/response.php) consume the RabbitMQ queue and show response to user
 
 
 After knowing the project routes is necessary configure a instance for rabbitMQ, the proyect use 
@@ -32,10 +33,14 @@ Then choose the option for a datacenter and choose the bottom review, finally co
 
 ![datacenter](https://user-images.githubusercontent.com/22681704/54213066-ca925a80-44b1-11e9-88c0-b563cbd2ae97.PNG)
 
+Finally configure with the details variables in the section of our instance, and replace the parameters in the archive (http://localhost/list_wine/views/response.php) and in the (http://localhost/list_wine/views/validacion.php), the parameters
+to change are $host, $user, $pass, $port, $vhost in both archives
+
 We can see the details after create a instance, if we want to see the rabbitMQ manager, choose the bottom 
 like in the image
 
 ![details](https://user-images.githubusercontent.com/22681704/54213351-41c7ee80-44b2-11e9-814a-237101892497.PNG)
+
 
 ## RabbitMQ Manager
 
