@@ -12,27 +12,33 @@ $xml = simplexml_load_string($feed);
 $conn = db_connect();
 $log = new Logger('Charge_Rss');
 $log->pushHandler(new StreamHandler('C:/wamp64/www/list_wine/Log/data_'.date('Y-m-d').'.log', Logger::DEBUG));
-
-foreach ($xml->channel->item as $item) {
-    $date = new DateTime((string)$item->pubDate);
-    $title = (string)$item->title;
-    $pubDate = $date->format('Y-m-d H:i:s');
-    
-    //$title = $conn->real_escape_string($title);
-    $data_escape = mysqli_real_escape_string($conn, $title);
-    
-    $sql = "INSERT INTO wine(title,pubDate) VALUES ('$data_escape','$pubDate')";
-    $result = mysqli_query($conn, $sql);
-    $str_LogTxt = "DATA: Title: $title , PubDate: $pubDate";
-    $log->debug($str_LogTxt);
-    if (! empty($result)) {
-        $affectedRow ++;
-    } else {
-        $error_message = mysqli_error($conn);
-        $str_LogTxt .= "[ERROR= " . $error_message . "";
-        $log->error($str_LogTxt);
+try {
+    foreach ($xml->channel->item as $item) {
+        $date = new DateTime((string)$item->pubDate);
+        $title = (string)$item->title;
+        $pubDate = $date->format('Y-m-d H:i:s');
+        
+        //$title = $conn->real_escape_string($title);
+        $data_escape = mysqli_real_escape_string($conn, $title);
+        
+        $sql = "INSERT INTO wine(title,pubDate) VALUES ('$data_escape','$pubDate')";
+        $result = mysqli_query($conn, $sql);
+        $str_LogTxt = "DATA: Title: $title , PubDate: $pubDate";
+        $str_LogTxt .= "QUERY: $sql";
+        $log->addDebug($str_LogTxt);
+        if (! empty($result)) {
+            $affectedRow ++;
+        } else {
+            $error_message = mysqli_error($conn);
+            $str_LogTxt .= "[ERROR= " . $error_message . "";
+            $log->addError($str_LogTxt);
+        }
     }
+} catch (Exception $e) {
+    $error = "Error_exception: ". $e->getMessage();
+    $log->addError($error);
 }
+
 
 
 ?>

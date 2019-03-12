@@ -1,8 +1,11 @@
 <?php
 require_once '../vendor/autoload.php';
 include '../controllers/db_connect.php';
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
-
+$log = new Logger('response');
+$log->pushHandler(new StreamHandler('C:/wamp64/www/list_wine/Log/data_'.date('Y-m-d').'.log', Logger::DEBUG));
 
 $conn = db_connect();
 $query1="SELECT count(*) as total FROM wine";
@@ -15,47 +18,55 @@ $url ='https://www.winespectator.com/rss/rss?t=dwp';
 $feed = file_get_contents($url);
 $xml = simplexml_load_string($feed);
 
-if ($total >0){
-    $query2 = "TRUNCATE TABLE wine";
-    $update = mysqli_query($conn, $query2);
-    
-    foreach ($xml->channel->item as $item) {
-        $date = new DateTime((string)$item->pubDate);
-        $title = (string)$item->title;
-        $pubDate = $date->format('Y-m-d H:i:s');
+try {
+    if ($total >0){
+        $query2 = "TRUNCATE TABLE wine";
+        mysqli_query($conn, $query2);
         
-        $title = $conn->real_escape_string($title);
-        
-        $sql = "INSERT INTO wine(title,pubDate) VALUES ('$title','$pubDate')";
-        $result = mysqli_query($conn, $sql);
-        
-        if (! empty($result)) {
-            $affectedRow ++;
-        } else {
-            $error_message = mysqli_error($conn);
+        foreach ($xml->channel->item as $item) {
+            $date = new DateTime((string)$item->pubDate);
+            $title = (string)$item->title;
+            $pubDate = $date->format('Y-m-d H:i:s');
+            $log->addInfo("Item_Rss: $item");
+            
+            $title = $conn->real_escape_string($title);
+            
+            $sql = "INSERT INTO wine(title,pubDate) VALUES ('$title','$pubDate')";
+            $log->addInfo("Insert_SQL: $sql");
+            $result = mysqli_query($conn, $sql);
+            
+            if (! empty($result)) {
+                $affectedRow ++;
+            } else {
+                $error_message = mysqli_error($conn);
+            }
+        }
+        $response = "updated wine list";
+        $log->addInfo("Response: $response");
+    }
+    else {
+        foreach ($xml->channel->item as $item) {
+            $date = new DateTime((string)$item->pubDate);
+            $title = (string)$item->title;
+            $pubDate = $date->format('Y-m-d H:i:s');
+            
+            $title = $conn->real_escape_string($title);
+            
+            $sql = "INSERT INTO wine(title,pubDate) VALUES ('$title','$pubDate')";
+            $result = mysqli_query($conn, $sql);
+            
+            if (! empty($result)) {
+                $affectedRow ++;
+            } else {
+                $error_message = mysqli_error($conn);
+            }
         }
     }
-    $response = "updated wine list";
-    
+} catch (Exception $e) {
+    $error ="Error_Exception - ".$e->getMessage();
+    $log->addError($error);
 }
-else {
-    foreach ($xml->channel->item as $item) {
-        $date = new DateTime((string)$item->pubDate);
-        $title = (string)$item->title;
-        $pubDate = $date->format('Y-m-d H:i:s');
-        
-        $title = $conn->real_escape_string($title);
-        
-        $sql = "INSERT INTO wine(title,pubDate) VALUES ('$title','$pubDate')";
-        $result = mysqli_query($conn, $sql);
-        
-        if (! empty($result)) {
-            $affectedRow ++;
-        } else {
-            $error_message = mysqli_error($conn);
-        }
-    }
-}
+
 ?>
 
 <?php

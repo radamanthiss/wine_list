@@ -1,7 +1,11 @@
 <?php
 require_once '../vendor/autoload.php';
 include '../controllers/db_connect.php';
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
+$log = new Logger('response');
+$log->pushHandler(new StreamHandler('C:/wamp64/www/list_wine/Log/data_'.date('Y-m-d').'.log', Logger::DEBUG));
 $conn = db_connect();
 
 $query2 = "CREATE TABLE IF NOT EXISTS `wine` (
@@ -13,8 +17,12 @@ $query2 = "CREATE TABLE IF NOT EXISTS `wine` (
 $create_table = mysqli_query($conn, $query2);
 
 if(!$create_table){
-    echo 'Error creating table in database';
+    $error = 'Error creating table in database';
+    $log->addError($error);
+    echo $error;
 }
 else{
-    echo 'The table was created correctly';
+    $response = 'The table was created correctly';
+    $log->addInfo($response);
+    echo $response;
 }
